@@ -35,20 +35,30 @@ func (app *application) addDefaultData(td *TemplateData, r *http.Request) *Templ
 // renderTemplate uses for rendering the template that we need for presentation
 func (app *application) renderTemplate(w http.ResponseWriter, r *http.Request,
 	page string, td *TemplateData, partials ...string) error {
-	var _ *template.Template
+	var t *template.Template
 	var err error
 	templateRender := fmt.Sprintf("templates/%s.page.tmpl", page)
 
-	_, tmplOk := app.templateCache[templateRender]
+	t, tmplOk := app.templateCache[templateRender]
 
 	if app.config.env == "production" && tmplOk {
-		_ = app.templateCache[templateRender]
+		t = app.templateCache[templateRender]
 	} else {
-		_, err = app.parseTemplate(page, templateRender, partials)
+		t, err = app.parseTemplate(page, templateRender, partials)
 		if err != nil {
 			app.errLogger.Println(err)
 			return err
 		}
+	}
+
+	if td == nil {
+		td = &TemplateData{}
+	}
+
+	td = app.addDefaultData(td, r)
+	err = t.Execute(w, td)
+	if err != nil {
+		return err
 	}
 
 	return nil
