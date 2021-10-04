@@ -2,7 +2,10 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
+	"net/http"
+	"strings"
 )
 
 type TemplateData struct {
@@ -23,3 +26,61 @@ var functions = template.FuncMap{}
 
 //go:embed templates
 var templateFS embed.FS
+
+// addDefaultData uses for adding default data into every TemplateData with http.Request
+func (app *application) addDefaultData(td *TemplateData, r *http.Request) *TemplateData {
+	return td
+}
+
+// renderTemplate uses for rendering the template that we need for presentation
+func (app *application) renderTemplate(w http.ResponseWriter, r *http.Request,
+	page string, td *TemplateData, partials ...string) error {
+	var _ *template.Template
+	var err error
+	templateRender := fmt.Sprintf("templates/%s.page.tmpl", page)
+
+	_, tmplOk := app.templateCache[templateRender]
+
+	if app.config.env == "production" && tmplOk {
+		_ = app.templateCache[templateRender]
+	} else {
+		_, err = app.parseTemplate(page, templateRender, partials)
+		if err != nil {
+			app.errLogger.Println(err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// parseTemplate uses for parsing page template with partials and other configurations
+func (app *application) parseTemplate(page string,
+	templateRender string, partials []string) (*template.Template, error) {
+	var t *template.Template
+	var err error
+
+	// here I start building partials
+	if len(partials) > 0 {
+		for idx, partial := range partials {
+			partials[idx] = fmt.Sprintf("templates/%s.partial.tmpl", partial)
+		}
+	}
+
+	if len(partials) > 0 {
+		t, err = template.New(fmt.Sprintf("%s.page.tmpl", page)).Funcs(functions).ParseFS(templateFS,
+			"templates/base.layout.tmpl", strings.Join(partials, ","), templateRender)
+	} else {
+		t, err = template.New(fmt.Sprintf("%s.page.tmpl", page)).Funcs(functions).ParseFS(templateFS,
+			"templates/base.layout.tmpl", templateRender)
+	}
+
+	if err != nil {
+		app.errLogger.Println(err)
+		return nil, err
+	}
+
+	app.templateCache[templateRender] = t
+
+	return t, nil
+}
