@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"time"
 )
 
@@ -47,7 +48,20 @@ func (app *application) serve() error {
 
 	app.infoLogger.Println("Starting HTTP Server on port ", app.config.env, " : ", app.config.port)
 
-	return srv.ListenAndServe()
+	sigC := make(chan os.Signal)
+	signal.Notify(sigC, os.Interrupt)
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			app.errLogger.Fatal(err.Error())
+			return
+		}
+	}()
+
+	// release the program and return
+	<-sigC
+
+	return nil
 }
 
 func main() {
@@ -75,11 +89,7 @@ func main() {
 		version:       version,
 	}
 
-	err := app.serve()
-	if err != nil {
-		app.errLogger.Fatal(err.Error())
-		return
-	}
+	_ = app.serve()
 
 	return
 }
