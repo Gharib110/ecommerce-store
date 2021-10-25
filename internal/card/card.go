@@ -58,6 +58,9 @@ func cardErrorMessage(code stripe.ErrorCode) string {
 		msg = "Your card was declined"
 	case stripe.ErrorCodeExpiredCard:
 		msg = "Your card is expired"
+	case stripe.ErrorCodeIncorrectCVC:
+		msg = "Incorrect CVC code"
+		// I should add another stripe.Errors
 	default:
 		msg = "Some error occurred on your card"
 	}
