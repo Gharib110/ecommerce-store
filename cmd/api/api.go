@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -12,12 +11,11 @@ import (
 )
 
 const version = "1.0.0"
-const cssVersion = "1"
 
+// config a structure which contains data about our app
 type config struct {
 	port int
 	env  string
-	api  string
 	db   struct {
 		dsn string
 	}
@@ -27,14 +25,15 @@ type config struct {
 	}
 }
 
+// application is structure which contains config and additional configurations for our app
 type application struct {
-	config        config
-	infoLogger    *log.Logger
-	errLogger     *log.Logger
-	templateCache map[string]*template.Template
-	version       string
+	config     config
+	infoLogger *log.Logger
+	errLogger  *log.Logger
+	version    string
 }
 
+// serve configure & run server and multiplexer
 func (app *application) serve() error {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", app.config.port),
@@ -69,7 +68,6 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "Server Port to Listen On")
 	flag.StringVar(&cfg.env, "env", "development", "Application Environment {development|production|maintenance}")
-	flag.StringVar(&cfg.api, "api", "http://localhost:4001", "URL to api")
 
 	flag.Parse()
 
@@ -79,14 +77,11 @@ func main() {
 	infoLogger := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errLogger := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	tc := make(map[string]*template.Template)
-
 	app := &application{
-		config:        cfg,
-		infoLogger:    infoLogger,
-		errLogger:     errLogger,
-		templateCache: tc,
-		version:       version,
+		config:     cfg,
+		infoLogger: infoLogger,
+		errLogger:  errLogger,
+		version:    version,
 	}
 
 	_ = app.serve()
