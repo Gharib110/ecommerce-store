@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-type stripePaylod struct {
+type stripePayload struct {
 	Currency string `json:"currency"`
 	Amount   string `json:"amount"`
 }
@@ -20,7 +20,7 @@ type jsonResponse struct {
 }
 
 func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request) {
-	var payload stripePaylod
+	var payload stripePayload
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -54,7 +54,7 @@ func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(out)
+		_, _ = w.Write(out)
 		return
 	} else {
 		rsp := jsonResponse{
@@ -70,7 +70,7 @@ func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(out)
+		_, _ = w.Write(out)
 
 		return
 	}
