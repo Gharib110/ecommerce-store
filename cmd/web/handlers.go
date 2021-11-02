@@ -5,7 +5,10 @@ import (
 )
 
 func (app *application) VirtualTerminal(w http.ResponseWriter, r *http.Request) {
-	if err := app.renderTemplate(w, r, "terminal", nil); err != nil {
+	stringMap := make(map[string]string)
+	stringMap["publishable_key"] = app.config.stripe.key
+
+	if err := app.renderTemplate(w, r, "terminal", &TemplateData{StringMap: stringMap}); err != nil {
 		app.errLogger.Println(err)
 	}
 }

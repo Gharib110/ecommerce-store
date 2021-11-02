@@ -29,6 +29,7 @@ var templateFS embed.FS
 
 // addDefaultData uses for adding default data into every TemplateData with http.Request
 func (app *application) addDefaultData(td *TemplateData, r *http.Request) *TemplateData {
+	td.API = app.config.api
 	return td
 }
 
