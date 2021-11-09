@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/DapperBlondie/ecommerce-store/internal/driver"
 	"log"
 	"net/http"
 	"os"
@@ -68,6 +69,7 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "Server Port to Listen On")
 	flag.StringVar(&cfg.env, "env", "development", "Application Environment {development|production|maintenance}")
+	flag.StringVar(&cfg.db.dsn, "dsn", "root:dapperblondie110@tcp(localhost:3306)/widgets?parsTime=true&tls=false", "DSN")
 
 	flag.Parse()
 
@@ -76,6 +78,13 @@ func main() {
 
 	infoLogger := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errLogger := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	conn, err := driver.OpenDB(cfg.db.dsn)
+	if err != nil {
+		errLogger.Fatal(err)
+		return
+	}
+	defer conn.Close()
 
 	app := &application{
 		config:     cfg,
