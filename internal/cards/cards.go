@@ -51,9 +51,9 @@ func (c *Card) CreatePaymentIntent(currency string, amount int) (*stripe.Payment
 
 // cardErrorMessage uses for creating error message based on stripe.ErrorCode
 func cardErrorMessage(code stripe.ErrorCode) string {
-	msg := "" //nolint:wastedassign
+	msg := ""
 
-	switch code { //nolint:wsl
+	switch code {
 	case stripe.ErrorCodeCardDeclined:
 		msg = "Your card was declined"
 	case stripe.ErrorCodeExpiredCard:
