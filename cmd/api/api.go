@@ -3,17 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/DapperBlondie/ecommerce-store/internal/driver"
 	"log"
+	"myapp/internal/driver"
+	"myapp/internal/models"
 	"net/http"
 	"os"
-	"os/signal"
 	"time"
 )
 
 const version = "1.0.0"
 
-// config a structure which contains data about our app
 type config struct {
 	port int
 	env  string
@@ -24,76 +23,76 @@ type config struct {
 		secret string
 		key    string
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+	}
+	secretkey string
+	frontend  string
 }
 
-// application is structure which contains config and additional configurations for our app
 type application struct {
-	config     config
-	infoLogger *log.Logger
-	errLogger  *log.Logger
-	version    string
+	config   config
+	infoLog  *log.Logger
+	errorLog *log.Logger
+	version  string
+	DB       models.DBModel
 }
 
-// serve configure & run server and multiplexer
 func (app *application) serve() error {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", app.config.port),
 		Handler:           app.routes(),
-		TLSConfig:         nil,
+		IdleTimeout:       30 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       20 * time.Second,
+		WriteTimeout:      5 * time.Second,
 	}
 
-	app.infoLogger.Println("Starting Back-End Server on port ", app.config.env, " : ", app.config.port)
+	app.infoLog.Printf("Starting Back end server in %s mode on port %d\n", app.config.env, app.config.port)
 
-	sigC := make(chan os.Signal)
-	signal.Notify(sigC, os.Interrupt)
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil {
-			app.errLogger.Fatal(err.Error())
-			return
-		}
-	}()
-
-	// release the program and return
-	<-sigC
-
-	return nil
+	return srv.ListenAndServe()
 }
 
 func main() {
-	cfg := config{}
+	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 4000, "Server Port to Listen On")
-	flag.StringVar(&cfg.env, "env", "development", "Application Environment {development|production|maintenance}")
-	flag.StringVar(&cfg.db.dsn, "dsn", "root:dapperblondie110@tcp(localhost:3306)/widgets?parsTime=true&tls=false", "DSN")
+	flag.IntVar(&cfg.port, "port", 4001, "Server port to listen on")
+	flag.StringVar(&cfg.env, "env", "development", "Application environment {development|production|maintenance}")
+	flag.StringVar(&cfg.db.dsn, "dsn", "trevor:secret@tcp(localhost:3306)/widgets?parseTime=true&tls=false", "DSN")
+	flag.StringVar(&cfg.smtp.host, "smtphost", "smtp.mailtrap.io", "smtp host")
+	flag.StringVar(&cfg.smtp.username, "smtpuser", "30980d8770302b02e", "smtp user")
+	flag.StringVar(&cfg.smtp.password, "smtppass", "33c58457afcc76", "smtp password")
+	flag.IntVar(&cfg.smtp.port, "smtpport", 587, "smtp port")
+	flag.StringVar(&cfg.secretkey, "secret", "bRWmrwNUTqNUuzckjxsFlHZjxHkjrzKP", "secret key")
+	flag.StringVar(&cfg.frontend, "frontend", "http://localhost:4000", "url to front end")
 
 	flag.Parse()
 
-	cfg.stripe.secret = os.Getenv("STRIPE_SECRET")
 	cfg.stripe.key = os.Getenv("STRIPE_KEY")
+	cfg.stripe.secret = os.Getenv("STRIPE_SECRET")
 
-	infoLogger := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	errLogger := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	conn, err := driver.OpenDB(cfg.db.dsn)
 	if err != nil {
-		errLogger.Fatal(err)
-		return
+		errorLog.Fatal(err)
 	}
 	defer conn.Close()
 
 	app := &application{
-		config:     cfg,
-		infoLogger: infoLogger,
-		errLogger:  errLogger,
-		version:    version,
+		config:   cfg,
+		infoLog:  infoLog,
+		errorLog: errorLog,
+		version:  version,
+		DB:       models.DBModel{DB: conn},
 	}
 
-	_ = app.serve()
-
-	return
+	err = app.serve()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
