@@ -1,6 +1,8 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // SessionLoad peforms the load and save of a session, per request
 func SessionLoad(next http.Handler) http.Handler {

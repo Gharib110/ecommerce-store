@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/DapperBlondie/ecommerce-store/internal/driver"
+	"github.com/DapperBlondie/ecommerce-store/internal/models"
 	"log"
-	"myapp/internal/driver"
-	"myapp/internal/models"
 	"net/http"
 	"os"
 	"time"
